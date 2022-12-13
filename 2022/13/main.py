@@ -1,5 +1,6 @@
 from typing import List
 from aockit import get_input
+import functools
 
 def read_packets(rows):
     packets = list()
@@ -60,6 +61,16 @@ def part1():
 
 def part2():
     data = get_input(2022, 13)
+    data = data.split('\n')
+    packets = read_packets(data)
+    a = [[2]]
+    b = [[6]]
+    packets.append(a)
+    packets.append(b)
+    packets.sort(key=functools.cmp_to_key(right_order), reverse=True)
+    i_a = packets.index(a) + 1
+    i_b = packets.index(b) + 1
+    print("Part2", i_a * i_b)
 
 
 if __name__ == "__main__":
