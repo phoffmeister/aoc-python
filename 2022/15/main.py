@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from aockit import get_input
 
 import re
@@ -6,9 +6,7 @@ import re
 
 def read_sensors(rows: List[str]):
     sensors = dict()
-    beacons = set()
     pat = re.compile(r"^Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)$")
-    min_x, max_x = 99999999999999999, 0
     for row in rows:
         match = pat.match(row)
         if match:
@@ -17,34 +15,80 @@ def read_sensors(rows: List[str]):
             bx = int(match.groups()[2])
             by = int(match.groups()[3])
             d = abs(sx - bx) + abs(sy - by)
-            sensors[(sx, sy)] = (bx, by, d)
-            beacons.add((bx, by))
-            mi = sx - d
-            ma = sx + d
-            min_x = min(mi, min_x)
-            max_x = max(ma, max_x)
-    return sensors, beacons, min_x, max_x
+            sensors[(sx, sy)] = d
+    return sensors
 
 
-def check_for_row(sensors, beacons, min_x, max_x, y):
-    count = 0
-    for x in range(min_x - 1, max_x + 2):
-        if (x, y) in beacons:
-            continue
-        for sensor in sensors:
-            beacon = sensors[sensor]
-            d = abs(sensor[0] - x) + abs(sensor[1] - y)
-            if d <= beacon[2]:
-                count += 1
+def reduce(l:List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    change = True
+    while change:
+        change = False
+        n_l = list()
+        for x in range(len(l)):
+            for y in range(len(l)):
+                if x == y:
+                    continue
+                x1, x2 = l[x]
+                x3, x4 = l[y]
+
+                nx1 = 0
+                nx2 = 0
+                if x1 <= x3 and x3 <= x2:
+                    change = True
+                    nx1 = x1
+                    nx2 = max(x2, x4)
+
+                elif x1 <= x4 and x4 <= x2:
+                    change = True
+                    nx1 = min(x1, x3)
+                    nx2 = x2
+
+                elif x3 <= x1 and x1 <= x4:
+                    change = True
+                    nx1 = x3
+                    nx2 = max(x2, x4)
+
+                elif x3 <= x2 and x2 <= x4:
+                    change = True
+                    nx1 = min(x1, x3)
+                    nx2 = x4
+
+
+                if change:
+                    for i in range(len(l)):
+                        if i == x:
+                            n_l.append((nx1, nx2))
+                        elif i == y:
+                            pass
+                        else:
+                            n_l.append(l[i])
+                    l = n_l
+                    break
+            if change:
                 break
-    return count
+    return l
 
 
 def part1():
     data = get_input(2022, 15)
     data = data.split('\n')
     sensors = read_sensors(data)
-    amount = check_for_row(*sensors, 2000000)
+    line = 2000000
+    l = list()
+    for sx, sy in sensors.keys():
+        d = sensors[(sx, sy)]
+        diff = abs(line - sy)
+        if diff > d:
+            continue
+        x = d - diff
+        l.append((sx-x, sx+x))
+
+    l = reduce(l)
+
+    amount = 0
+    for a,b in l:
+        amount += b-a
+
     print("Part 1:", amount)
 
 
@@ -52,6 +96,31 @@ def part2():
     data = get_input(2022, 15)
     data = data.split('\n')
     sensors = read_sensors(data)
+    for line in range(4000000):
+        l = list()
+        for sx, sy in sensors.keys():
+            d = sensors[(sx, sy)]
+            diff = abs(line - sy)
+            if diff > d:
+                continue
+            x = d - diff
+            a = sx - x
+            b = sx + x
+            if b < 0:
+                continue
+            if a < 0:
+                a = 0
+            if a > 4000000:
+                continue
+            if b > 4000000:
+                b = 4000000
+            l.append((a, b))
+        l = reduce(l)
+        if len(l) > 1:
+            y = line
+            x = l[0][1]+1
+            print("Part 2:", x*4000000+y)
+            break
 
 
 if __name__ == "__main__":
